@@ -5,7 +5,7 @@
  *
  * a pong game in suckless-style
  *
- * please read the README for more details
+ * please read README.txt for more details
  */
 
 #include <math.h>
@@ -19,11 +19,16 @@
 #include <GLFW/glfw3.h>
 #include <png.h>
 
-#define PX_SCALE 3
-#define RESOLUTION_X 256
-#define RESOLUTION_Y 192
+#define PX_SCALE 2
+#define RESOLUTION_X 320
+#define RESOLUTION_Y 200
 #define STEPS_PER_FRAME 8
 #define SUB_PX_SIZE 256
+
+typedef enum Button {
+	BUTTON_UP, BUTTON_DOWN,
+	AMOUNT_BUTTONS
+} Button;
 
 typedef struct Image {
 	unsigned int width, height;
@@ -37,33 +42,40 @@ typedef struct PongObject {
 	int width, height;
 } PongObject;
 
+static Image image_load(const char *path, unsigned int iw, unsigned int ih);
+
 static int init(void);
 static int pongobject_intersection(PongObject a, PongObject b);
+
+static void ball_reset(void);
+static void char_draw(char c, int x, int y);
+static void control(void);
+static void image_draw(Image i, int x, int y, unsigned int iw, unsigned int ih);
 static void key_callback(struct GLFWwindow *w, int k, int sc, int a, int m);
+static void next_input(void);
 static void paint(void);
 static void pongobject_draw(PongObject o);
 static void pongobject_update(PongObject *o);
 static void step(void);
+static void text_draw(const char *txt, int x, int y);
 static void update(void);
 
 static Image font;
 static PongObject ball;
 static PongObject opponent;
 static PongObject player;
+
 static char text_buffer[BUFSIZ];
-static int opponent_score, player_score;
+static int input_buffer[AMOUNT_BUTTONS];
+static int score_opponent, score_player;
 static int wait_time;
 static unsigned int ticks;
 
 static struct GLFWwindow *window;
 
-/*
- * initializes parts of the game state
- */
 static int
 init(void)
 {
-	/* glfw3 init */
 	if (!glfwInit())
 		return 1;
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
@@ -77,34 +89,31 @@ init(void)
 	glfwMakeContextCurrent(window);
 	glfwSwapInterval(1);
 
-	/* OpenGL init */
 	glOrtho(0, RESOLUTION_X, RESOLUTION_Y, 0, -1, 1);
 	glEnable(GL_TEXTURE_2D);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 
-	/* game state init */
+	font = image_load("res/asciifont.png", 5, 10);
+
 	ball = (PongObject) {
-		.x = 128 * SUB_PX_SIZE, .y = 96 * SUB_PX_SIZE, .width = 8 * SUB_PX_SIZE, .height = 8 * SUB_PX_SIZE,
+		.width = 8 * SUB_PX_SIZE, .height = 8 * SUB_PX_SIZE,
 	};
 	opponent = (PongObject) {
-		.x = 232 * SUB_PX_SIZE, .y = 64 * SUB_PX_SIZE,
+		.x = (RESOLUTION_X - 24) * SUB_PX_SIZE, .y = 70 * SUB_PX_SIZE,
 		.width = 8 * SUB_PX_SIZE, .height = 60 * SUB_PX_SIZE,
 	};
 	player = (PongObject) {
-		.x = 16 * SUB_PX_SIZE, .y = 64 * SUB_PX_SIZE,
+		.x = 16 * SUB_PX_SIZE, .y = 70 * SUB_PX_SIZE,
 		.width = 8 * SUB_PX_SIZE, .height = 60 * SUB_PX_SIZE,
 	};
-	wait_time = 300;
 	srand(time(0));
+	ball_reset();
 
 	return 0;
 }
 
-/*
- * checks if two pongobjects are intersecting
- */
 static int
 pongobject_intersection(PongObject a, PongObject b)
 {
@@ -115,11 +124,8 @@ pongobject_intersection(PongObject a, PongObject b)
 	return 0;
 }
 
-/*
- * loads an image file for rendering
- */
 static Image
-image_load(const char *path, unsigned int subimage_width, unsigned int subimage_height)
+image_load(const char *path, unsigned int iw, unsigned int ih)
 {
 	FILE *fp;
 	int bit_depth, color_type;
@@ -165,10 +171,10 @@ image_load(const char *path, unsigned int subimage_width, unsigned int subimage_
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	free(row_pointers);
-	img.subimage_width = subimage_width;
-	img.subimage_height = subimage_height;
-	img.width -= img.width % subimage_width;
-	img.height -= img.height % subimage_height;
+	img.subimage_width = iw;
+	img.subimage_height = ih;
+	img.width -= img.width % iw;
+	img.height -= img.height % ih;
 cleanup:
 	if (fp != NULL) fclose(fp);
 	if (png_ptr != NULL || info_ptr != NULL || end_info != NULL)
@@ -177,57 +183,50 @@ cleanup:
 	return img;
 }
 
-/*
- * resets the ball's position
- */
 static void
-ball_reset()
+ball_reset(void)
 {
-	ball.x = 128 * SUB_PX_SIZE;
-	ball.y = 96 * SUB_PX_SIZE;
+	ball.x = RESOLUTION_X * SUB_PX_SIZE / 2 - ball.width / 2;
+	ball.y = RESOLUTION_Y * SUB_PX_SIZE / 2 - ball.height / 2;
 	ball.velocity_x = 0;
 	ball.velocity_y = 0;
+	snprintf(text_buffer, BUFSIZ, "Score: %d - %d", score_player, score_opponent);
+	wait_time = 300;
 }
 
-/*
- * called by GLFW whenever a keypress is registered
- * updates the state of the buttons array depending on key pressed
- * quits if escape is pressed
- */
 static void
-key_callback(struct GLFWwindow *w, int k, int sc, int a, int m)
+char_draw(char c, int x, int y)
 {
-	if (k == GLFW_KEY_ESCAPE && a == GLFW_PRESS) {
-		glfwSetWindowShouldClose(w, GLFW_TRUE);
-		return;
-	}
-	switch (k) {
-	case GLFW_KEY_UP:
-	case GLFW_KEY_W:
-		if (a == GLFW_PRESS) {
-			player.velocity_y = -512;
-		}
-		else if (a == GLFW_RELEASE) {
-			player.velocity_y = 0;
-		}
-		break;
-	case GLFW_KEY_DOWN:
-	case GLFW_KEY_S:
-		if (a == GLFW_PRESS) {
-			player.velocity_y = 512;
-		}
-		else if (a == GLFW_RELEASE) {
-			player.velocity_y = 0;
-		}
-		break;
-	default:
-		return;
-	}
+	unsigned int ix, iy;
+	c -= ' ';
+	ix = c % (font.width / font.subimage_width);
+	iy = c / (font.width / font.subimage_width);
+	image_draw(font, x * font.subimage_width, y * font.subimage_height, ix, iy);
 }
 
-/*
- * Draws an image to the screen.
- */
+static void
+control(void)
+{
+	if (opponent.y + (opponent.height * 0.25) > ball.y + (ball.height / 2)) {
+		opponent.velocity_y = (ball.x >= RESOLUTION_X * SUB_PX_SIZE / 2) ? -3 : -2;
+		opponent.velocity_y *= SUB_PX_SIZE;
+	}
+	else if (opponent.y + (opponent.height * 0.75) < ball.y + (ball.height / 2)) {
+		opponent.velocity_y = (ball.x >= RESOLUTION_X * SUB_PX_SIZE / 2) ? 3 : 2;
+		opponent.velocity_y *= SUB_PX_SIZE;
+	}
+	else {
+		opponent.velocity_y = 0;
+	}
+
+	if (input_buffer[BUTTON_UP])
+		player.velocity_y = -2 * SUB_PX_SIZE;
+	else if (input_buffer[BUTTON_DOWN])
+		player.velocity_y = 2 * SUB_PX_SIZE;
+	else
+		player.velocity_y = 0;
+}
+
 static void
 image_draw(Image img, int x, int y, unsigned int ix, unsigned int iy)
 {
@@ -246,23 +245,47 @@ image_draw(Image img, int x, int y, unsigned int ix, unsigned int iy)
 	glEnd();
 }
 
-/*
- * renders the game
- */
+static void
+key_callback(struct GLFWwindow *w, int k, int sc, int a, int m)
+{
+	int button;
+	int newstate;
+	if (k == GLFW_KEY_ESCAPE && a == GLFW_PRESS) {
+		glfwSetWindowShouldClose(w, GLFW_TRUE);
+		return;
+	}
+
+	if (a == GLFW_PRESS)
+		newstate = 1;
+	else if (a == GLFW_RELEASE)
+		newstate = 0;
+	else
+		return;
+
+	switch (k) {
+	case GLFW_KEY_UP:
+		button = BUTTON_UP;	
+		break;
+	case GLFW_KEY_DOWN:
+		button = BUTTON_DOWN;	
+		break;
+	default:
+		return;
+	}
+
+	input_buffer[button] = newstate;
+}
+
 static void
 paint(void)
 {
-	if (wait_time) {
-		/* paint text */
-	}
 	pongobject_draw(ball);
 	pongobject_draw(opponent);
 	pongobject_draw(player);
+	if (wait_time)
+		text_draw(text_buffer, 8, 3);
 }
 
-/*
- * draws a pong object
- */
 static void
 pongobject_draw(PongObject po)
 {
@@ -270,6 +293,8 @@ pongobject_draw(PongObject po)
 	float y = po.y / (float)SUB_PX_SIZE;
 	float w = po.width / (float)SUB_PX_SIZE;
 	float h = po.height / (float)SUB_PX_SIZE;
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glColor3f(1.0, 1.0, 1.0);
 	glBegin(GL_QUADS);
 	glVertex2f(x, y);
 	glVertex2f(x + w, y);
@@ -278,77 +303,88 @@ pongobject_draw(PongObject po)
 	glEnd();
 }
 
-/*
- * updates parts of the game state that are independent of player input
- */
+static void
+pongobject_update(PongObject *o)
+{
+	o->x += o->velocity_x / STEPS_PER_FRAME;
+	o->y += o->velocity_y / STEPS_PER_FRAME;
+	if (o->y < 0)
+		o->y = 0;
+	if (o->y + o->height >= RESOLUTION_Y * SUB_PX_SIZE)
+		o->y = RESOLUTION_Y * SUB_PX_SIZE - o->height;
+}
+
+static void
+text_draw(const char *txt, int x, int y)
+{
+	int tx = x, ty = y;
+	unsigned int i;
+	if (!txt)
+		return;
+	for (i = 0; txt[i]; i++) {
+		if (txt[i] >= ' ') {
+			char_draw(txt[i], tx, ty);
+			tx++;
+		}
+		else if(txt[i] == '\n') {
+			tx = x;
+			ty++;
+		}
+	}
+}
+
 static void
 update(void)
 {
-	/* opponent tries to follow the ball */
-	if (opponent.y + (opponent.height * 0.25) > ball.y + (ball.height / 2)) {
-		opponent.velocity_y = (ball.x >= RESOLUTION_X * SUB_PX_SIZE / 2) ? -3 : -2;
-		opponent.velocity_y *= SUB_PX_SIZE;
-	}
-	else if (opponent.y + (opponent.height * 0.75) < ball.y + (ball.height / 2)) {
-		opponent.velocity_y = (ball.x >= RESOLUTION_X * SUB_PX_SIZE / 2) ? 3 : 2;
-		opponent.velocity_y *= SUB_PX_SIZE;
-	}
-	else {
-		opponent.velocity_y = 0;
-	}
-
 	/* sets the ball's velocity if it stops */
 	if (!ball.velocity_x)
 		ball.velocity_x = (rand() % 2) ? -1 * SUB_PX_SIZE : 1 * SUB_PX_SIZE;
 	if (!ball.velocity_y)
 		ball.velocity_y = (rand() % 2) ? -1 * SUB_PX_SIZE : 1 * SUB_PX_SIZE;
 
-	opponent.y += opponent.velocity_y / STEPS_PER_FRAME;
-	player.y += player.velocity_y / STEPS_PER_FRAME;
+	/* clamp the ball's velocity if it's too fast */
+	if (ball.velocity_x < -4 * SUB_PX_SIZE)
+		ball.velocity_x = -4 * SUB_PX_SIZE;
+	if (ball.velocity_x > 4 * SUB_PX_SIZE)
+		ball.velocity_x = 4 * SUB_PX_SIZE;
+	if (ball.velocity_y < -4 * SUB_PX_SIZE)
+		ball.velocity_y = -4 * SUB_PX_SIZE;
+	if (ball.velocity_y > 4 * SUB_PX_SIZE)
+		ball.velocity_y = 4 * SUB_PX_SIZE;
 
-	if (!wait_time) {
-		ball.x += ball.velocity_x / STEPS_PER_FRAME;
-		ball.y += ball.velocity_y / STEPS_PER_FRAME;
-	}
-
-	/* clamp the ball's velocity */
-	ball.velocity_y = (ball.velocity_y < -4 * SUB_PX_SIZE) ? -4 * SUB_PX_SIZE :
-		ball.velocity_y;
-	ball.velocity_y = (ball.velocity_y > 4 * SUB_PX_SIZE) ? 4 * SUB_PX_SIZE :
-		ball.velocity_y;
-	ball.velocity_x = (ball.velocity_x < -4 * SUB_PX_SIZE) ? -4 * SUB_PX_SIZE :
-		ball.velocity_x;
-	ball.velocity_x = (ball.velocity_x > 4 * SUB_PX_SIZE) ? 4 * SUB_PX_SIZE :
-		ball.velocity_x;
+	pongobject_update(&opponent);
+	pongobject_update(&player);
+	if (!wait_time)
+		pongobject_update(&ball);
 
 	/* calculate the ball hitting the boundaries */
-	if (ball.x < 0) {
-		/* score_opponent++; */
-		wait_time = 300;
+	if (ball.x + ball.width <= 0) {
+		score_opponent++;
 		ball_reset();
 	}
-	else if (ball.x + ball.width > RESOLUTION_X * SUB_PX_SIZE) {
-		/* score_player++; */
-		wait_time = 300;
+	else if (ball.x >= RESOLUTION_X * SUB_PX_SIZE) {
+		score_player++;
 		ball_reset();
 	}
-	else if (ball.y < 0) {
+	else if (ball.y <= 0) {
 		ball.velocity_y = -ball.velocity_y;
 		ball.y = 0;
 	}
-	else if (ball.y + ball.height > RESOLUTION_Y * SUB_PX_SIZE) {
+	else if (ball.y + ball.height >= RESOLUTION_Y * SUB_PX_SIZE) {
 		ball.velocity_y = -ball.velocity_y;
 		ball.y = RESOLUTION_Y * SUB_PX_SIZE - ball.height;
 	}
 
 	/* calculate ball hitting the paddle */
-	if (ball.velocity_x < 0 && pongobject_intersection(player, ball)) {
+	if (ball.velocity_x < 0 && ball.x >= player.x &&
+		pongobject_intersection(player, ball)) {
 		ball.velocity_y += (ball.velocity_y > 0) ? SUB_PX_SIZE : -SUB_PX_SIZE;
 		ball.velocity_x = -ball.velocity_x;
 		ball.velocity_x += SUB_PX_SIZE;
 		ball.x = player.x + player.width;
 	}
-	else if (ball.velocity_x > 0 && pongobject_intersection(opponent, ball)) {
+	else if (ball.velocity_x > 0 && ball.x <= opponent.x + opponent.width
+		&& pongobject_intersection(opponent, ball)) {
 		ball.velocity_y += (ball.velocity_y > 0) ? SUB_PX_SIZE : -SUB_PX_SIZE;
 		ball.velocity_x = -ball.velocity_x;
 		ball.velocity_x -= SUB_PX_SIZE;
@@ -367,6 +403,7 @@ main(int argc, char *argv[])
 	while (!glfwWindowShouldClose(window)) {
 		glfwPollEvents();
 		glClear(GL_COLOR_BUFFER_BIT);
+		control();
 		for (i = 0; i < STEPS_PER_FRAME; ++i)
 			update();
 		if (wait_time)

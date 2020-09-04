@@ -4,14 +4,14 @@ pong.c
 A clone of Pong written in suckless-style C.
 
 1 Installation
---------------
+==============
 
-1.1 Windows
------------
+Windows
+-------
 
 To compile this on a Windows system, visit the MSYS2 website
-(https://www.msys2.org/) and follow the instructions in the "Installation"
-section of the main page.
+(https://www.msys2.org/) and follow the instructions in the
+"Installation" section of the main page.
 
 Once it is installed, open the MSYS2 MinGW64 terminal then run the
 following commands (without the '$'):
@@ -21,8 +21,8 @@ following commands (without the '$'):
 	$ pacman -S libpng
 	$ pacman -S zlib
 
-1.2 Linux / *BSD / etc
-----------------------
+Linux / *BSD / etc
+------------------
 
 Using your operating system's package manager, install the following
 packages:
@@ -37,12 +37,13 @@ The packages `gcc` and `make` are likely to already be installed on
 your system.  If not, they will usually be brought in by a meta-package
 named like `build-essential` or `base-devel`.
 
-In most distributions of Linux, you will need to install the development
-versions of the packages `libglfw3`, `libpng`, and `zlib`.  Most of the
-time, these packages will be suffixed with `-dev` or `-devel`.
+In most distributions of Linux, you will need to install the
+development versions of the packages `libglfw3`, `libpng`, and `zlib`.
+Most of the time, these packages will be suffixed with `-dev` or
+`-devel`.
 
-2 Compiling
------------
+Compiling
+=========
 
 Once the development environment and libraries are installed, the
 program can be compiled by invoking the command `make` in this directory.
@@ -58,34 +59,110 @@ running `make install` e.g.:
 
 	# PREFIX=$HOME/bin make install
 
-3 Running
----------
+Running
+=======
 
-Run the game with the `pong` command.  The human player controls their
-paddle (on the left) using the arrow keys `up` and `down`.  To quit the
-game, press the `Escape` key.
+Run the game with the `pong` command.  The human player controls
+their paddle (on the left) using the arrow keys `up` and `down`.
+To quit the game, press the `Escape` key.
 
-4 More Information
-------------------
+Explanation of Code
+===================
+
+This program is written is such a way that it uses a large
+amount of C's feature set.  This includes features that may be
+beginner-unfriendly.  Additionally, someone unfamiliar with either
+graphical application development in C, or the suckless code style,
+may find it difficult to follow along.
+
+Overall Structure
+-----------------
+
+The source code's structure is derived directly from suckless.org's
+style guide (see the next section, "Further Reading", for more
+information).  Per that style guide, all custom data types are
+defined first, followed by function definitons, then global variable
+declaration, and finally each of the program's functions are defined
+in the same order as they are declared.  Lastly, the program's main()
+function is defined at the very end of the source file.  For a top-down
+overview of the program, my recommendation would be to start with the
+main() function, and follow along there, scrolling back up to function
+definitions for more detailed understanding of what is being done.
+
+Code from Libraries
+-------------------
+
+This program depends on three main libraries: GLFW, OpenGL, and libpng.
+
+Functions from GLFW are in camelCase prefixed by "glfw" e.g.
+"glfwWindowShouldClose()".  Functions from OpenGL are also in
+camelCase, prefixed just by "gl" e.g. "glBegin()", "glVertex2f()".
+Functions and data types from libpng are in snake_case, prefixed by
+"png_".
+
+Pointers
+--------
+
+Besides those pointers needed for the libraries GLFW and libpng, pong.c
+also passes pointers into one function call: pongobject_update().
+This is intended to show that pointers are excellent for functions that
+are meant to update data in-place.  Though all instances of PongObject
+are global variables, the approach used by pongobject_update() is meant
+to demonstrate that not all functions in an application need to explicitly
+name globals in their definitons.  This allows future changes to
+variable locations to be made much more easily, because this update
+function doesn't need to have scope access to the given variables.
+
+Goto
+----
+
+The use of the goto keyword is rightly demonized by most programmers.
+However, one aspect of programming in which goto is still one of
+the best options is in error recovery and resource deallocation.
+The function image_load() makes use of goto in cases where the file
+to load cannot be read, or when memory needed to hold the file's data
+cannot be allocated.  In these error cases, a goto is used that jumps
+near the end of the function, to a label placed just before a
+de-allocation.  This allows all manual resource management to happen in
+one place, with deallocations being skipped if they logically could not
+have happened.
+
+Other languages solve the problem of deallocation either by using
+deconstructors (such as C++, which are slow and may have side-effects),
+or garbage collection, such as Java or Go.  Both systems involve lots
+of magic, where use of goto involves explicit deallocation following
+rules established in the code itself.
+
+Speaking of Go, it too has a facility used similarly to the recommended
+usage of goto, itself called "defer".  In Go's defer, a function
+call is "deferred" to just before the current function returns.
+In principle, this functions almost identically to goto-based
+deallocations, except the language doesn't need to implement the goto
+keyword at all.  There are currently proposals to include defer in
+a future standard of the C language, so goto might not be as useful
+in the future.
+
+Further Reading
+===============
 
 For general information on programming in C, I would recommend reading
 the The C Programming Language, 2nd Edition by Brian W. Kernigan and
-Dennis Ritchie.  Dennis was the creator of C, and Brian Kernigan is an
-accomplished professor in Computer Science.  Both were instrumental in
-the creation of the UNIX operating system at Bell Labs.
+Dennis Ritchie.  Dennis was the creator of C, and Brian Kernigan is
+an accomplished professor in Computer Science.  Both were instrumental
+in the creation of the UNIX operating system at Bell Labs.
 
-For more information on how to write suckless-style C, take a look at
-suckless.org's style guide (https://suckless.org/coding_style/).
+For more information on how to write suckless-style C, take a look
+at suckless.org's style guide (https://suckless.org/coding_style/).
 suckless.org hosts and maintains a small number of extremely simple
 utilities to be used on UNIX-like systems, notably the window manager
 `dwm` and the web browser `surf`.
 
-If you have any specific questions about the source code, you can e-mail
-me at victoria.a.lacroix@gmail.com.  I'm receptive to unprompted
+If you have any specific questions about the source code, you can
+e-mail me at victoria.a.lacroix@gmail.com.  I'm receptive to unprompted
 messages, so don't be shy.
 
-5 Copyright
------------
+Copyright
+=========
 
 pong.c (c) 2020 Victoria Lacroix
 

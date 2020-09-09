@@ -1,10 +1,10 @@
 pong.c
 ======
 
-A clone of Pong written in suckless-style C.
+A clone of Pong written in less than 500 lines of suckless-style C.
 
-1 Installation
-==============
+Installation
+============
 
 Windows
 -------
@@ -29,7 +29,8 @@ packages:
 
 	- gcc
 	- make
-	- libglfw3
+	- GLFW3	
+	- GLU
 	- libpng
 	- zlib
 
@@ -38,9 +39,9 @@ your system.  If not, they will usually be brought in by a meta-package
 named like `build-essential` or `base-devel`.
 
 In most distributions of Linux, you will need to install the
-development versions of the packages `libglfw3`, `libpng`, and `zlib`.
-Most of the time, these packages will be suffixed with `-dev` or
-`-devel`.
+development versions of the packages `libglfw3`, `libglu`, `libpng`,
+and `zlib`.  Most of the time, these packages will be suffixed with
+`-dev` or `-devel`.
 
 Compiling
 =========

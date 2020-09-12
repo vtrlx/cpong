@@ -42,7 +42,6 @@ typedef struct PongObject {
 	int width, height;
 } PongObject;
 
-static Image image_decode(const uint8_t blob, unsigned int iw, unsigned int ih);
 static Image image_load(const char *path, unsigned int iw, unsigned int ih);
 
 static int init(void);
@@ -62,11 +61,13 @@ static void text_draw(const char *txt, int x, int y);
 static void update(void);
 
 static const char *instructions =
-	"-Insructions-\n\n"
-	"Up: Move Paddle Up\n"
-	"Down: Move Paddle Down\n"
-	"Enter: Start Game\n"
-	"Escape: Quit Game\n";
+	"          INSTRUCTIONS\n"
+	"          ============\n"
+	"\n"
+	"   <UP> : Move Paddle Up\n"
+	" <DOWN> : Move Paddle Down\n"
+	"  <ESC> : Quit Game\n"
+	"<ENTER> : Start Game\n";
 
 static Image font;
 static PongObject ball;

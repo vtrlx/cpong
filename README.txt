@@ -16,10 +16,10 @@ To compile this on a Windows system, visit the MSYS2 website
 Once it is installed, open the MSYS2 MinGW64 terminal then run the
 following commands (without the '$'):
 
-	$ pacman -S mingw32-make
-	$ pacman -S libglfw3
-	$ pacman -S libpng
-	$ pacman -S zlib
+	$ pacman -S make
+	$ pacman -S mingw-w64-x86_64-glfw
+	$ pacman -S mingw-w64-x86_64-libpng
+	$ pacman -S mingw-w64-x86_64-zlib
 
 Linux / *BSD / etc
 ------------------
@@ -29,7 +29,7 @@ packages:
 
 	- gcc
 	- make
-	- GLFW3	
+	- GLFW3
 	- GLU
 	- libpng
 	- zlib
@@ -47,10 +47,11 @@ Compiling
 =========
 
 Once the development environment and libraries are installed, the
-program can be compiled by invoking the command `make` in this directory.
-Windows users will want to run `make` using the MinGW64 terminal instead
-of the MSYS2 terminal.  Linux/*BSD users may also install the program
-to their PATH by running the command `make install` as root.
+program can be compiled by invoking the command `make` in this
+directory.  Windows users will want to run `make -f Makefile.mingw`
+using the MinGW64 terminal instead of the MSYS2 terminal.  Linux/*BSD
+users may also install the program to their PATH by running the command
+`make install` as root.
 
 	# make install
 

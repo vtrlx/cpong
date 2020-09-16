@@ -3,8 +3,8 @@ pong.c
 
 A clone of Pong written in less than 500 lines of suckless-style C.
 
-Installation
-============
+Setup
+=====
 
 Windows
 -------
@@ -16,8 +16,10 @@ To compile this on a Windows system, visit the MSYS2 website
 Once it is installed, open the MSYS2 MinGW64 terminal then run the
 following commands (without the '$'):
 
-	$ pacman -S make
+	$ pacman -S base-devel
+	$ pacman -S mingw-w64-x86_64-gcc
 	$ pacman -S mingw-w64-x86_64-glfw
+	$ pacman -S mingw-w64-x86_64-mesa
 	$ pacman -S mingw-w64-x86_64-libpng
 	$ pacman -S mingw-w64-x86_64-zlib
 
@@ -46,11 +48,26 @@ and `zlib`.  Most of the time, these packages will be suffixed with
 Compiling
 =========
 
-Once the development environment and libraries are installed, the
-program can be compiled by invoking the command `make` in this
-directory.  Windows users will want to run `make -f Makefile.mingw`
-using the MinGW64 terminal instead of the MSYS2 terminal.  Linux/*BSD
-users may also install the program to their PATH by running the command
+Windows (using MSYS2/MinGW)
+---------------------------
+
+Run the MinGW 64-bit terminal instead of the MSYS2
+terminal.  Use "cd" to navigate back to where this project was
+downloaded to, then run:
+
+	$ make -f Makefile.mingw
+	$ ./pong.exe
+
+Linux
+-----
+
+Once you've installed the dependencies using your distro's package
+manager, these commands will build then run the game.
+
+	$ make
+  $ ./pong
+
+Users may also install the program to their PATH by running the command
 `make install` as root.
 
 	# make install
@@ -61,12 +78,16 @@ running `make install` e.g.:
 
 	# PREFIX=$HOME/bin make install
 
-Running
+...which installs the game to the "bin" directory for the current user.
+
+Playing
 =======
 
-Run the game with the `pong` command.  The human player controls
-their paddle (on the left) using the arrow keys `up` and `down`.
-To quit the game, press the `Escape` key.
+Run the game with the `./pong` command (`./pong.exe` in Windows).
+
+Start the game with the Enter key once it is running, control the left
+paddle using the Up and Down arrow keys, and one may quit the game with
+Escape.
 
 Explanation of Code
 ===================
@@ -109,11 +130,12 @@ Besides those pointers needed for the libraries GLFW and libpng, pong.c
 also passes pointers into one function call: pongobject_update().
 This is intended to show that pointers are excellent for functions that
 are meant to update data in-place.  Though all instances of PongObject
-are global variables, the approach used by pongobject_update() is meant
-to demonstrate that not all functions in an application need to explicitly
-name globals in their definitons.  This allows future changes to
-variable locations to be made much more easily, because this update
-function doesn't need to have scope access to the given variables.
+are global variables, the approach used by pongobject_update()
+is meant to demonstrate that not all functions in an application
+need to explicitly name globals in their definitons.  This allows
+future changes to variable locations to be made much more easily,
+because this update function doesn't need to have scope access to
+the given variables.
 
 Goto
 ----
@@ -122,12 +144,12 @@ The use of the goto keyword is rightly demonized by most programmers.
 However, one aspect of programming in which goto is still one of
 the best options is in error recovery and resource deallocation.
 The function image_load() makes use of goto in cases where the file
-to load cannot be read, or when memory needed to hold the file's data
-cannot be allocated.  In these error cases, a goto is used that jumps
-near the end of the function, to a label placed just before a
-de-allocation.  This allows all manual resource management to happen in
-one place, with deallocations being skipped if they logically could not
-have happened.
+to load cannot be read, or when memory needed to hold the file's
+data cannot be allocated.  In these error cases, a goto is used that
+jumps near the end of the function, to a label placed just before a
+de-allocation.  This allows all manual resource management to happen
+in one place, with deallocations being skipped if they logically
+could not have happened.
 
 Other languages solve the problem of deallocation either by using
 deconstructors (such as C++, which are slow and may have side-effects),
@@ -139,10 +161,11 @@ Speaking of Go, it too has a facility used similarly to the recommended
 usage of goto, itself called "defer".  In Go's defer, a function
 call is "deferred" to just before the current function returns.
 In principle, this functions almost identically to goto-based
-deallocations, except the language doesn't need to implement the goto
-keyword at all.  There are currently proposals to include defer in
-a future standard of the C language, so goto might not be as useful
-in the future.
+deallocations, except the language doesn't need to implement the
+goto keyword at all.  There are currently proposals to include defer
+in a future standard of the C language, so it is possible that in
+the future, goto will become a less ideal solution for this type of
+resource management.
 
 Further Reading
 ===============
@@ -168,5 +191,5 @@ Copyright
 
 pong.c (c) 2020 Victoria Lacroix
 
-pong.c is distributed under the terms of an MIT/X Consortium license.
-Please read COPYING for more information.
+pong.c is distributed under the terms of an X11 license.  Please read
+COPYING.txt for more information.

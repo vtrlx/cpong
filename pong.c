@@ -1,11 +1,11 @@
 /*
  * pong.c
- *
  * (c) 2020 Victoria Lacroix
  *
- * a pong game in suckless-style
+ * A pong game in suckless-style.
  *
- * please read README.txt for more details
+ * For information about this program, see README.txt
+ * For copyright information, see COPYING.txt
  */
 
 #include <math.h>

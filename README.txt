@@ -137,6 +137,25 @@ future changes to variable locations to be made much more easily,
 because this update function doesn't need to have scope access to
 the given variables.
 
+Fixed-Point Arithmetic
+----------------------
+
+With one exception, every piece of numeric logic in this game is done
+using fixed-point (integer) arithmetic.  The game does so by internally
+scaling up all pixel coordinates by a factor known as "Subpixel size".
+These coordinates are scaled back down when drawing the game area
+on the screen.  In practice, this means that every on-screen pixel
+is further sub-divided into 65536 units (256 on each axis) by the
+game's physics.  This prevents choppy movement without needing to rely
+on floating-point numbers.
+
+The reason I made this design choice is that floating-point numbers are
+well-known to be inaccurate when performing additions or subtractions.
+Many consecutive operations will gradually introduce small
+inaccuracies, and these may slowly compound.  In all, floating-point
+can have a tendency to be more difficult to reason about.  Fixed-point
+arithmetic is used here to illustrate how it may be done.
+
 Goto
 ----
 

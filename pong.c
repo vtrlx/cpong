@@ -50,7 +50,7 @@ static int pongobject_intersection(PongObject a, PongObject b);
 static void ball_reset(void);
 static void char_draw(char c, int x, int y);
 static void control(void);
-static void image_draw(Image i, int x, int y, unsigned int iw, unsigned int ih);
+static void image_draw(Image i, int x, int y, int ix, int iy);
 static void key_callback(struct GLFWwindow *w, int k, int sc, int a, int m);
 static void next_input(void);
 static void paint(void);
@@ -262,20 +262,22 @@ control(void)
 }
 
 static void
-image_draw(Image img, int x, int y, unsigned int ix, unsigned int iy)
+image_draw(Image img, int x, int y, int ix, int iy)
 {
-	float iw = (float) img.subimage_width / img.width;
-	float ih = -(float) img.subimage_height / img.height;
+	int iw = img.subimage_width;
+	int ih = img.subimage_height;
+	float fiw = iw / (float)img.width;
+	float fih = -ih / (float)img.height;
 	glBindTexture(GL_TEXTURE_2D, img.texture);
 	glBegin(GL_QUADS);
-	glTexCoord2f(ix * iw, iy * ih);
-	glVertex2f(x, y);
-	glTexCoord2f(ix * iw + iw, iy * ih);
-	glVertex2f(x + (int)img.subimage_width, y);
-	glTexCoord2f(ix * iw + iw, iy * ih + ih);
-	glVertex2f(x + (int)img.subimage_width, y + (int)img.subimage_height);
-	glTexCoord2f(ix * iw, iy * ih + ih);
-	glVertex2f(x, y + (int)img.subimage_height);
+	glTexCoord2f(ix * fiw, iy * fih);
+	glVertex2i(x, y);
+	glTexCoord2f(ix * fiw + fiw, iy * fih);
+	glVertex2i(x + iw, y);
+	glTexCoord2f(ix * fiw + fiw, iy * fih + fih);
+	glVertex2i(x + iw, y + ih);
+	glTexCoord2f(ix * fiw, iy * fih + fih);
+	glVertex2i(x, y + ih);
 	glEnd();
 }
 
@@ -333,17 +335,17 @@ paint(void)
 static void
 pongobject_draw(PongObject po)
 {
-	float x = po.x / (float)SUB_PX_SIZE;
-	float y = po.y / (float)SUB_PX_SIZE;
-	float w = po.width / (float)SUB_PX_SIZE;
-	float h = po.height / (float)SUB_PX_SIZE;
+	int x = po.x / SUB_PX_SIZE;
+	int y = po.y / SUB_PX_SIZE;
+	int w = po.width / SUB_PX_SIZE;
+	int h = po.height / SUB_PX_SIZE;
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glColor3f(1.0, 1.0, 1.0);
 	glBegin(GL_QUADS);
-	glVertex2f(x, y);
-	glVertex2f(x + w, y);
-	glVertex2f(x + w, y + h);
-	glVertex2f(x, y + h);
+	glVertex2i(x, y);
+	glVertex2i(x + w, y);
+	glVertex2i(x + w, y + h);
+	glVertex2i(x, y + h);
 	glEnd();
 }
 

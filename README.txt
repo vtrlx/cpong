@@ -1,7 +1,7 @@
 pong.c
 ======
 
-A clone of Pong written in less than 500 lines of suckless-style C.
+A clone of Pong written in less than 500 lines of minimalistic C.
 
 Setup
 =====
@@ -94,16 +94,14 @@ Explanation of Code
 
 This program is written is such a way that it uses a large
 amount of C's feature set.  This includes features that may be
-beginner-unfriendly.  Additionally, someone unfamiliar with either
-graphical application development in C, or the suckless code style,
-may find it difficult to follow along.
+beginner-unfriendly.  Additionally, someone unfamiliar C may find it
+difficult to follow along.
 
 Overall Structure
 -----------------
 
-The source code's structure is derived directly from suckless.org's
-style guide (see the next section, "Further Reading", for more
-information).  Per that style guide, all custom data types are
+The source code's structure is chosen to maintain structure
+without needing multiple source files.  All custom data types are
 defined first, followed by function definitons, then global variable
 declaration, and finally each of the program's functions are defined
 in the same order as they are declared.  Lastly, the program's main()
@@ -194,12 +192,6 @@ the The C Programming Language, 2nd Edition by Brian W. Kernigan and
 Dennis Ritchie.  Dennis was the creator of C, and Brian Kernigan is
 an accomplished professor in Computer Science.  Both were instrumental
 in the creation of the UNIX operating system at Bell Labs.
-
-For more information on how to write suckless-style C, take a look
-at suckless.org's style guide (https://suckless.org/coding_style/).
-suckless.org hosts and maintains a small number of extremely simple
-utilities to be used on UNIX-like systems, notably the window manager
-`dwm` and the web browser `surf`.
 
 If you have any specific questions about the source code, you can
 e-mail me at victoria.a.lacroix@gmail.com.  I'm receptive to unprompted

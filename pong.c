@@ -2,7 +2,7 @@
  * pong.c
  * (c) 2020 Victoria Lacroix
  *
- * A pong game in suckless-style.
+ * A pong game in C with a minimalist style.
  *
  * For information about this program, see README.txt
  * For copyright information, see COPYING.txt
